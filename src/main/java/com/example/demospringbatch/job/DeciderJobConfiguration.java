@@ -8,9 +8,12 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.flow.FlowExecutionStatus;
 import org.springframework.batch.core.job.flow.JobExecutionDecider;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,11 +44,18 @@ public class DeciderJobConfiguration {
 	@Bean
 	public Step startStep() {
 		return stepBuilderFactory.get("startStep")
-				.tasklet((contribution, chunkContext) -> {
-					log.info(">>>>> Start!");
-					return RepeatStatus.FINISHED;
-				})
+				.tasklet(startStepTasklet(null))
 				.build();
+	}
+
+	@Bean
+	@StepScope
+	public Tasklet startStepTasklet(@Value("#{jobParameters[requestDate]}") String requestDate) {
+		return (contribution, chunkContext) -> {
+			log.info(">>>>> Start!");
+			log.info(">>>>> requestDate = {}", requestDate);
+			return RepeatStatus.FINISHED;
+		};
 	}
 
 	@Bean

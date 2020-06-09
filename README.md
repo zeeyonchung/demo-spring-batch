@@ -156,6 +156,53 @@ public class SimpleJobConfiguration {
     ```
 - 분기 처리는 Decider에게 맡기고 Step은 배치 로직에 집중할 수 있다.
  
+## Job Parameter
+- 배치 작업시 사용할 수 있는 파라미터
+- Job Parameter를 사용하려면 Scope를 선언해야 한다.
+    - `@JobScope`: Step 선언문에서 사용
+        - 참고: [SimpleJobConfiguration](src/main/java/com/example/demospringbatch/job/SimpleJobConfiguration.java)
+            ```
+            @Bean
+            public Job simpleJob() {
+                return jobBuilderFactory.get("simpleJob")
+                        .start(simpleStep1(null))
+                        .next(simpleStep2(null))
+                        .build();
+            }
+          
+            @Bean
+            @JobScope
+            public Step simpleStep1(@Value("#{jobParameters[requestDate]}") String requestDate) {
+                return stepBuilderFactory.get("simpleStep1")
+                        .tasklet((contribution, chunkContext) -> {
+                            log.info(">>>>> This is Step1");
+                            log.info(">>>>> requestDate = {}", requestDate);
+                            return RepeatStatus.FINISHED;
+                        })
+                        .build();
+            }
+            ```
+    - `@StepScope`: Tasklet, ItemReader, ItemWriter, ItemProcessor에서 사용
+        - 참고: [DeciderJobConfiguration](src/main/java/com/example/demospringbatch/job/DeciderJobConfiguration.java)
+            ```
+            @Bean
+            public Step startStep() {
+                return stepBuilderFactory.get("startStep")
+                        .tasklet(startStepTasklet(null))
+                        .build();
+            }
+        
+            @Bean
+            @StepScope
+            public Tasklet startStepTasklet(@Value("#{jobParameters[requestDate]}") String requestDate) {
+                return (contribution, chunkContext) -> {
+                    log.info(">>>>> Start!");
+                    log.info(">>>>> requestDate = {}", requestDate);
+                    return RepeatStatus.FINISHED;
+                };
+            }
+            ```
+- 스프링 컨테이너는 Job, Step 실행시점에 해당 컴포넌트를 빈으로 생성한다.
   
 ## 실행 설정
 - 지정한 배치 작업만 실행되도록 하기  
